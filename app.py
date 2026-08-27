@@ -227,6 +227,27 @@ if modo == "📊 Dashboard histórico":
         default=ccaas_disponibles
     )
 
+    # --------------------------------------------------------
+    # COMPETIDORES
+    # --------------------------------------------------------
+    
+    competidores_disponibles = (
+        df_dash[
+            "ganador_grupo"
+        ]
+        .fillna("Sin información")
+        .astype(str)
+        .value_counts()
+        .index
+        .tolist()
+    )
+    
+    competidores_seleccionados = st.sidebar.multiselect(
+        "Competidores",
+        options=competidores_disponibles,
+        default=competidores_disponibles
+    )
+
 
     # --------------------------------------------------------
     # TIPO DE ÓRGANO
@@ -300,7 +321,21 @@ if modo == "📊 Dashboard histórico":
             )
         ]
 
+    
 
+    if competidores_seleccionados:
+
+        df_filtrado = df_filtrado[
+            df_filtrado[
+                "ganador_grupo"
+            ]
+            .fillna("Sin información")
+            .astype(str)
+            .isin(
+                competidores_seleccionados
+            )
+    ]
+        
     if organos_seleccionados:
 
         df_filtrado = df_filtrado[
