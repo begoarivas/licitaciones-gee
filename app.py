@@ -1,6 +1,7 @@
 import io
 import cloudpickle
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import streamlit as st
 
@@ -460,496 +461,493 @@ if modo == "📊 Dashboard histórico":
     st.divider()
 
 
+
     # ========================================================
-    # FILA 1 — EVOLUCIÓN + ESTACIONALIDAD
+    # DASHBOARD VISUAL
     # ========================================================
+
+    # --------------------------------------------------------
+    # 1. EVOLUCIÓN DEL MERCADO — ÁREA
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Evolución del mercado"
+    )
+
+    evolucion_anual = (
+        df_filtrado
+        .dropna(
+            subset=["anio_publicacion"]
+        )
+        .groupby("anio_publicacion")
+        .agg(
+            expedientes=(
+                "Número de expediente",
+                "nunique"
+            )
+        )
+        .reset_index()
+    )
+
+    evolucion_anual["anio_publicacion"] = (
+        evolucion_anual["anio_publicacion"]
+        .astype(int)
+    )
+
+    fig_anual = px.area(
+        evolucion_anual,
+        x="anio_publicacion",
+        y="expedientes",
+        markers=True,
+        labels={
+            "anio_publicacion": "Año",
+            "expedientes": "Expedientes"
+        },
+        title="Evolución del volumen de licitaciones"
+    )
+
+    fig_anual.update_traces(
+        line=dict(width=3),
+        marker=dict(size=7)
+    )
+
+    fig_anual.update_layout(
+        height=390,
+        hovermode="x unified",
+        margin=dict(l=20, r=20, t=55, b=20)
+    )
+
+    st.plotly_chart(
+        fig_anual,
+        use_container_width=True
+    )
+
+
+    # --------------------------------------------------------
+    # 2. ESTACIONALIDAD — HEATMAP
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Estacionalidad de las publicaciones"
+    )
+
+    nombres_meses = [
+        "Enero", "Febrero", "Marzo", "Abril",
+        "Mayo", "Junio", "Julio", "Agosto",
+        "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    heat = (
+        df_filtrado
+        .dropna(
+            subset=[
+                "anio_publicacion",
+                "mes_publicacion"
+            ]
+        )
+        .groupby(
+            ["anio_publicacion", "mes_publicacion"]
+        )
+        .size()
+        .reset_index(name="expedientes")
+    )
+
+    heat["anio_publicacion"] = (
+        heat["anio_publicacion"].astype(int)
+    )
+    heat["mes_publicacion"] = (
+        heat["mes_publicacion"].astype(int)
+    )
+
+    heat["mes"] = heat["mes_publicacion"].map(
+        dict(enumerate(nombres_meses, start=1))
+    )
+
+    pivot_heat = (
+        heat
+        .pivot(
+            index="mes",
+            columns="anio_publicacion",
+            values="expedientes"
+        )
+        .reindex(nombres_meses)
+    )
+
+    fig_heat = px.imshow(
+        pivot_heat,
+        aspect="auto",
+        labels={
+            "x": "Año",
+            "y": "Mes",
+            "color": "Expedientes"
+        },
+        title="Concentración temporal de las licitaciones"
+    )
+
+    fig_heat.update_layout(
+        height=500,
+        margin=dict(l=20, r=20, t=55, b=20)
+    )
+
+    st.plotly_chart(
+        fig_heat,
+        use_container_width=True
+    )
+
+
+    # --------------------------------------------------------
+    # 3. PROCEDIMIENTO + RESULTADO — DONUTS
+    # --------------------------------------------------------
 
     col1, col2 = st.columns(2)
 
-
-    # --------------------------------------------------------
-    # EVOLUCIÓN ANUAL
-    # --------------------------------------------------------
-
     with col1:
 
-        st.subheader(
-            "Evolución anual"
-        )
+        st.subheader("Procedimiento")
 
-
-        evolucion_anual = (
-            df_filtrado
-            .dropna(
-                subset=[
-                    "anio_publicacion"
-                ]
-            )
-            .groupby(
-                "anio_publicacion"
-            )
-            .size()
-            .reset_index(
-                name="expedientes"
-            )
-        )
-
-
-        evolucion_anual[
-            "anio_publicacion"
-        ] = (
-            evolucion_anual[
-                "anio_publicacion"
-            ]
-            .astype(int)
-        )
-
-
-        fig_anual = px.line(
-            evolucion_anual,
-            x="anio_publicacion",
-            y="expedientes",
-            markers=True,
-            labels={
-                "anio_publicacion": "Año",
-                "expedientes": "Expedientes"
-            }
-        )
-
-
-        fig_anual.update_layout(
-            height=380,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            )
-        )
-
-
-        st.plotly_chart(
-            fig_anual,
-            use_container_width=True
-        )
-
-
-    # --------------------------------------------------------
-    # ESTACIONALIDAD
-    # --------------------------------------------------------
-
-    with col2:
-
-        st.subheader(
-            "Estacionalidad"
-        )
-
-
-        nombres_meses = [
-            "Enero",
-            "Febrero",
-            "Marzo",
-            "Abril",
-            "Mayo",
-            "Junio",
-            "Julio",
-            "Agosto",
-            "Septiembre",
-            "Octubre",
-            "Noviembre",
-            "Diciembre"
-        ]
-
-
-        estacionalidad = (
-            df_filtrado
-            .dropna(
-                subset=[
-                    "mes_publicacion"
-                ]
-            )
-            .groupby(
-                "mes_publicacion"
-            )
-            .size()
-            .reindex(
-                range(1, 13),
-                fill_value=0
-            )
-            .reset_index(
-                name="expedientes"
-            )
-        )
-
-
-        estacionalidad[
-            "mes"
-        ] = (
-            estacionalidad[
-                "mes_publicacion"
-            ]
-            .map(
-                dict(
-                    enumerate(
-                        nombres_meses,
-                        start=1
-                    )
-                )
-            )
-        )
-
-
-        fig_meses = px.bar(
-            estacionalidad,
-            x="mes",
-            y="expedientes",
-            labels={
-                "mes": "Mes",
-                "expedientes": "Expedientes"
-            }
-        )
-
-
-        fig_meses.update_layout(
-            height=380,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            )
-        )
-
-
-        st.plotly_chart(
-            fig_meses,
-            use_container_width=True
-        )
-
-
-    # ========================================================
-    # FILA 2 — GEOGRAFÍA + COMPETENCIA
-    # ========================================================
-
-    col1, col2 = st.columns(2)
-
-
-    # --------------------------------------------------------
-    # CCAA
-    # --------------------------------------------------------
-
-    with col1:
-
-        st.subheader(
-            "Distribución por comunidad autónoma"
-        )
-
-
-        geografica = (
-            df_filtrado[
-                "comunidad_autonoma"
-            ]
+        procedimientos = (
+            df_filtrado["procedimiento_agrupado"]
+            .fillna("Sin información")
             .value_counts()
-            .sort_values(
-                ascending=True
-            )
-        )
-
-
-        fig_geo = px.bar(
-            geografica,
-            orientation="h",
-            labels={
-                "value": "Expedientes",
-                "comunidad_autonoma": "Comunidad autónoma"
-            }
-        )
-
-
-        fig_geo.update_layout(
-            height=520,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            ),
-            showlegend=False
-        )
-
-
-        st.plotly_chart(
-            fig_geo,
-            use_container_width=True
-        )
-
-
-    # --------------------------------------------------------
-    # COMPETENCIA
-    # --------------------------------------------------------
-
-    with col2:
-
-        st.subheader(
-            "Principales adjudicatarios"
-        )
-
-
-        ganadores = (
-            df_filtrado[
-                "ganador_grupo"
-            ]
-            .fillna(
-                "Sin información"
-            )
-            .value_counts()
-            .head(10)
             .reset_index()
         )
 
-
-        ganadores.columns = [
-            "ganador",
+        procedimientos.columns = [
+            "procedimiento",
             "expedientes"
         ]
 
-
-        fig_ganadores = px.bar(
-            ganadores.sort_values(
-                "expedientes"
-            ),
-            x="expedientes",
-            y="ganador",
-            orientation="h",
-            labels={
-                "expedientes": "Expedientes",
-                "ganador": "Adjudicatario"
-            }
+        fig_procedimientos = px.pie(
+            procedimientos,
+            names="procedimiento",
+            values="expedientes",
+            hole=0.58
         )
 
-
-        fig_ganadores.update_layout(
-            height=520,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            ),
-            showlegend=False
+        fig_procedimientos.update_layout(
+            height=420,
+            margin=dict(l=10, r=10, t=20, b=20),
+            legend=dict(
+                orientation="h",
+                y=-0.08
+            )
         )
-
 
         st.plotly_chart(
-            fig_ganadores,
+            fig_procedimientos,
             use_container_width=True
         )
-
-
-    # ========================================================
-    # POSICIÓN DE GEE
-    # ========================================================
-
-    st.divider()
-
-    st.header(
-        "Posición de Grupo GEE"
-    )
-
-
-    # ========================================================
-    # GEE — EVOLUCIÓN DE CUOTA
-    # ========================================================
-
-    col1, col2 = st.columns(2)
-
-
-    with col1:
-
-        st.subheader(
-            "Cuota GEE por año"
-        )
-
-
-        gee_anual = (
-            df_filtrado
-            .dropna(
-                subset=[
-                    "anio_publicacion"
-                ]
-            )
-            .groupby(
-                "anio_publicacion"
-            )
-            .agg(
-                expedientes=(
-                    "Número de expediente",
-                    "size"
-                ),
-                expedientes_gee=(
-                    "gano_gee",
-                    "sum"
-                )
-            )
-            .reset_index()
-        )
-
-
-        gee_anual[
-            "cuota_gee"
-        ] = (
-            gee_anual[
-                "expedientes_gee"
-            ]
-            /
-            gee_anual[
-                "expedientes"
-            ]
-            *
-            100
-        )
-
-
-        gee_anual[
-            "anio_publicacion"
-        ] = (
-            gee_anual[
-                "anio_publicacion"
-            ]
-            .astype(int)
-        )
-
-
-        fig_gee_anual = px.line(
-            gee_anual,
-            x="anio_publicacion",
-            y="cuota_gee",
-            markers=True,
-            labels={
-                "anio_publicacion": "Año",
-                "cuota_gee": "Cuota GEE (%)"
-            }
-        )
-
-
-        fig_gee_anual.update_layout(
-            height=400,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            )
-        )
-
-
-        st.plotly_chart(
-            fig_gee_anual,
-            use_container_width=True
-        )
-
-
-    # ========================================================
-    # GEE — CUOTA POR PROCEDIMIENTO
-    # ========================================================
 
     with col2:
 
-        st.subheader(
-            "Cuota GEE por procedimiento"
-        )
+        st.subheader("Resultado")
 
-
-        gee_proc = (
-            df_filtrado
-            .groupby(
-                "procedimiento_agrupado"
-            )
-            .agg(
-                expedientes=(
-                    "Número de expediente",
-                    "size"
-                ),
-                expedientes_gee=(
-                    "gano_gee",
-                    "sum"
-                )
-            )
+        resultados = (
+            df_filtrado["resultado_agrupado"]
+            .fillna("Sin resultado")
+            .value_counts()
             .reset_index()
         )
 
+        resultados.columns = [
+            "resultado",
+            "expedientes"
+        ]
 
-        gee_proc[
-            "cuota_gee"
-        ] = (
-            gee_proc[
-                "expedientes_gee"
-            ]
-            /
-            gee_proc[
-                "expedientes"
-            ]
-            *
-            100
+        fig_resultados = px.pie(
+            resultados,
+            names="resultado",
+            values="expedientes",
+            hole=0.58
         )
 
-
-        gee_proc = (
-            gee_proc
-            .sort_values(
-                "cuota_gee"
+        fig_resultados.update_layout(
+            height=420,
+            margin=dict(l=10, r=10, t=20, b=20),
+            legend=dict(
+                orientation="h",
+                y=-0.08
             )
         )
 
-
-        fig_gee_proc = px.bar(
-            gee_proc,
-            x="cuota_gee",
-            y="procedimiento_agrupado",
-            orientation="h",
-            labels={
-                "cuota_gee": "Cuota GEE (%)",
-                "procedimiento_agrupado": "Procedimiento"
-            }
-        )
-
-
-        fig_gee_proc.update_layout(
-            height=400,
-            margin=dict(
-                l=20,
-                r=20,
-                t=20,
-                b=20
-            ),
-            showlegend=False
-        )
-
-
         st.plotly_chart(
-            fig_gee_proc,
+            fig_resultados,
             use_container_width=True
         )
 
 
-    # ========================================================
-    # GEE — CCAA
-    # ========================================================
+    # --------------------------------------------------------
+    # 4. PERFIL ECONÓMICO — HISTOGRAMA
+    # --------------------------------------------------------
 
     st.subheader(
-        "Cuota GEE por comunidad autónoma"
+        "Perfil económico de las oportunidades"
+    )
+
+    df_presupuesto = (
+        df_filtrado["presupuesto_expediente"]
+        .dropna()
+    )
+    df_presupuesto = df_presupuesto[
+        df_presupuesto > 0
+    ]
+
+    if len(df_presupuesto) > 0:
+
+        fig_presupuesto = px.histogram(
+            df_presupuesto,
+            x=df_presupuesto,
+            nbins=35,
+            labels={
+                "x": "Presupuesto (€)",
+                "count": "Expedientes"
+            },
+            title="Distribución de los presupuestos"
+        )
+
+        fig_presupuesto.update_xaxes(
+            type="log"
+        )
+
+        fig_presupuesto.update_layout(
+            height=430,
+            margin=dict(l=20, r=20, t=55, b=20)
+        )
+
+        st.plotly_chart(
+            fig_presupuesto,
+            use_container_width=True
+        )
+
+
+    # --------------------------------------------------------
+    # 5. PRESUPUESTO × DURACIÓN — SCATTER
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Relación entre presupuesto y duración"
+    )
+
+    df_scatter = df_filtrado[
+        [
+            "Número de expediente",
+            "presupuesto_expediente",
+            "duracion_meses",
+            "ganador_grupo",
+            "gano_gee",
+            "comunidad_autonoma"
+        ]
+    ].copy()
+
+    df_scatter["presupuesto_expediente"] = pd.to_numeric(
+        df_scatter["presupuesto_expediente"],
+        errors="coerce"
+    )
+
+    df_scatter["duracion_meses"] = pd.to_numeric(
+        df_scatter["duracion_meses"],
+        errors="coerce"
+    )
+
+    df_scatter = df_scatter.dropna(
+        subset=[
+            "presupuesto_expediente",
+            "duracion_meses"
+        ]
+    )
+
+    df_scatter = df_scatter[
+        df_scatter["presupuesto_expediente"] > 0
+    ]
+
+    if len(df_scatter) > 0:
+
+        limite_presupuesto = df_scatter[
+            "presupuesto_expediente"
+        ].quantile(0.98)
+
+        df_scatter_plot = df_scatter[
+            df_scatter["presupuesto_expediente"]
+            <= limite_presupuesto
+        ].copy()
+
+        df_scatter_plot["ganador_tipo"] = np.where(
+            df_scatter_plot["gano_gee"],
+            "Grupo GEE",
+            "Otros"
+        )
+
+        fig_scatter = px.scatter(
+            df_scatter_plot,
+            x="duracion_meses",
+            y="presupuesto_expediente",
+            color="ganador_tipo",
+            hover_data=[
+                "Número de expediente",
+                "ganador_grupo",
+                "comunidad_autonoma"
+            ],
+            labels={
+                "duracion_meses": "Duración (meses)",
+                "presupuesto_expediente": "Presupuesto (€)",
+                "ganador_tipo": "Ganador"
+            },
+            title="Tamaño y duración de las oportunidades"
+        )
+
+        fig_scatter.update_yaxes(
+            type="log"
+        )
+
+        fig_scatter.update_layout(
+            height=520,
+            margin=dict(l=20, r=20, t=55, b=20)
+        )
+
+        st.plotly_chart(
+            fig_scatter,
+            use_container_width=True
+        )
+
+        st.caption(
+            "Se excluyen del gráfico los valores por encima del "
+            "percentil 98 del presupuesto para facilitar la lectura. "
+            "Los datos originales no se modifican."
+        )
+
+
+    # --------------------------------------------------------
+    # 6. COMPETENCIA — DOT PLOT
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Competencia"
+    )
+
+    competencia = (
+        df_filtrado["ganador_grupo"]
+        .fillna("Sin información")
+        .value_counts()
+        .head(12)
+        .reset_index()
+    )
+
+    competencia.columns = [
+        "competidor",
+        "expedientes"
+    ]
+
+    competencia = competencia.sort_values(
+        "expedientes"
+    )
+
+    fig_competencia = px.scatter(
+        competencia,
+        x="expedientes",
+        y="competidor",
+        size="expedientes",
+        text="expedientes",
+        labels={
+            "expedientes": "Expedientes",
+            "competidor": "Competidor"
+        },
+        title="Expedientes adjudicados por competidor"
+    )
+
+    fig_competencia.update_traces(
+        textposition="middle right"
+    )
+
+    fig_competencia.update_layout(
+        height=500,
+        margin=dict(l=20, r=70, t=55, b=20),
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        fig_competencia,
+        use_container_width=True
     )
 
 
-    gee_ccaa = (
+    # --------------------------------------------------------
+    # 7. DISTRIBUCIÓN TERRITORIAL — TREEMAP
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Distribución territorial"
+    )
+
+    territorio = (
         df_filtrado
+        .dropna(
+            subset=["comunidad_autonoma"]
+        )
         .groupby(
             "comunidad_autonoma"
         )
         .agg(
             expedientes=(
                 "Número de expediente",
-                "size"
+                "nunique"
+            ),
+            presupuesto_mediano=(
+                "presupuesto_expediente",
+                "median"
+            )
+        )
+        .reset_index()
+    )
+
+    if len(territorio) > 0:
+
+        fig_territorio = px.treemap(
+            territorio,
+            path=["comunidad_autonoma"],
+            values="expedientes",
+            color="presupuesto_mediano",
+            hover_data={
+                "expedientes": True,
+                "presupuesto_mediano": ":,.0f"
+            },
+            labels={
+                "expedientes": "Expedientes",
+                "presupuesto_mediano": "Presupuesto mediano"
+            },
+            title="Peso de cada comunidad autónoma"
+        )
+
+        fig_territorio.update_layout(
+            height=520,
+            margin=dict(l=20, r=20, t=55, b=20)
+        )
+
+        st.plotly_chart(
+            fig_territorio,
+            use_container_width=True
+        )
+
+
+    # --------------------------------------------------------
+    # 8. POSICIÓN GEE — BURBUJAS
+    # --------------------------------------------------------
+
+    st.subheader(
+        "Posición de Grupo GEE por territorio"
+    )
+
+    gee_ccaa = (
+        df_filtrado
+        .dropna(
+            subset=["comunidad_autonoma"]
+        )
+        .groupby(
+            "comunidad_autonoma"
+        )
+        .agg(
+            expedientes=(
+                "Número de expediente",
+                "nunique"
             ),
             expedientes_gee=(
                 "gano_gee",
@@ -959,178 +957,85 @@ if modo == "📊 Dashboard histórico":
         .reset_index()
     )
 
-
-    gee_ccaa[
-        "cuota_gee"
-    ] = (
-        gee_ccaa[
-            "expedientes_gee"
-        ]
-        /
-        gee_ccaa[
-            "expedientes"
-        ]
-        *
-        100
+    gee_ccaa["cuota_gee"] = np.where(
+        gee_ccaa["expedientes"] > 0,
+        gee_ccaa["expedientes_gee"]
+        / gee_ccaa["expedientes"]
+        * 100,
+        0
     )
 
+    gee_ccaa = gee_ccaa[
+        gee_ccaa["expedientes"] >= 10
+    ].copy()
 
-    gee_ccaa = (
-        gee_ccaa
-        .sort_values(
-            "cuota_gee"
+    if len(gee_ccaa) > 0:
+
+        fig_gee_ccaa = px.scatter(
+            gee_ccaa,
+            x="expedientes",
+            y="cuota_gee",
+            size="expedientes",
+            hover_name="comunidad_autonoma",
+            hover_data={
+                "expedientes": True,
+                "expedientes_gee": True,
+                "cuota_gee": ":.2f"
+            },
+            labels={
+                "expedientes": "Tamaño del mercado",
+                "cuota_gee": "Cuota GEE (%)"
+            },
+            title="Tamaño de mercado frente a cuota GEE"
         )
-    )
 
-
-    fig_gee_ccaa = px.bar(
-        gee_ccaa,
-        x="cuota_gee",
-        y="comunidad_autonoma",
-        orientation="h",
-        labels={
-            "cuota_gee": "Cuota GEE (%)",
-            "comunidad_autonoma": "Comunidad autónoma"
-        }
-    )
-
-
-    fig_gee_ccaa.update_layout(
-        height=560,
-        margin=dict(
-            l=20,
-            r=20,
-            t=20,
-            b=20
-        ),
-        showlegend=False
-    )
-
-
-    st.plotly_chart(
-        fig_gee_ccaa,
-        use_container_width=True
-    )
-
-
-    # ========================================================
-    # INFORMACIÓN SOBRE TAMAÑO DE MUESTRA
-    # ========================================================
-
-    st.caption(
-        "Las cuotas territoriales o por procedimiento deben "
-        "interpretarse teniendo en cuenta el número de expedientes "
-        "disponibles en cada categoría."
-    )
-
-
-    # ========================================================
-    # PROCEDIMIENTOS
-    # ========================================================
-
-    st.subheader(
-        "Distribución de procedimientos"
-    )
-
-
-    procedimientos = (
-        df_filtrado[
-            "procedimiento_agrupado"
-        ]
-        .value_counts()
-        .reset_index()
-    )
-
-
-    procedimientos.columns = [
-        "procedimiento",
-        "expedientes"
-    ]
-
-
-    fig_procedimientos = px.pie(
-        procedimientos,
-        names="procedimiento",
-        values="expedientes",
-        hole=0.45
-    )
-
-
-    fig_procedimientos.update_layout(
-        height=430,
-        margin=dict(
-            l=20,
-            r=20,
-            t=20,
-            b=20
+        fig_gee_ccaa.update_layout(
+            height=500,
+            margin=dict(l=20, r=20, t=55, b=20)
         )
-    )
+
+        st.plotly_chart(
+            fig_gee_ccaa,
+            use_container_width=True
+        )
+
+        st.caption(
+            "Solo se muestran comunidades con al menos 10 expedientes."
+        )
 
 
-    st.plotly_chart(
-        fig_procedimientos,
-        use_container_width=True
-    )
+    # --------------------------------------------------------
+    # 9. DATOS
+    # --------------------------------------------------------
 
+    with st.expander(
+        "Consultar datos del dashboard"
+    ):
 
-    # ========================================================
-    # TIPO DE ÓRGANO
-    # ========================================================
+        st.dataframe(
+            df_filtrado,
+            use_container_width=True,
+            hide_index=True
+        )
 
-    st.subheader(
-        "Tipo de órgano de contratación"
-    )
+        csv_dashboard = (
+            df_filtrado
+            .to_csv(
+                index=False,
+                encoding="utf-8-sig"
+            )
+        )
 
-
-    organos = (
-        df_filtrado[
-            "tipo_organo"
-        ]
-        .value_counts()
-        .reset_index()
-    )
-
-
-    organos.columns = [
-        "tipo_organo",
-        "expedientes"
-    ]
-
-
-    fig_organos = px.bar(
-        organos.sort_values(
-            "expedientes"
-        ),
-        x="expedientes",
-        y="tipo_organo",
-        orientation="h",
-        labels={
-            "expedientes": "Expedientes",
-            "tipo_organo": "Tipo de órgano"
-        }
-    )
-
-
-    fig_organos.update_layout(
-        height=500,
-        margin=dict(
-            l=20,
-            r=20,
-            t=20,
-            b=20
-        ),
-        showlegend=False
-    )
-
-
-    st.plotly_chart(
-        fig_organos,
-        use_container_width=True
-    )
+        st.download_button(
+            "Descargar datos filtrados (CSV)",
+            data=csv_dashboard,
+            file_name="dashboard_licitaciones_filtrado.csv",
+            mime="text/csv"
+        )
 
 
     # ========================================================
-    # DATOS
+    # TABLA DE DATOS
     # ========================================================
 
     with st.expander(
@@ -1143,7 +1048,6 @@ if modo == "📊 Dashboard histórico":
             hide_index=True
         )
 
-
         csv_dashboard = (
             df_filtrado
             .to_csv(
@@ -1152,11 +1056,12 @@ if modo == "📊 Dashboard histórico":
             )
         )
 
-
         st.download_button(
             "Descargar datos filtrados (CSV)",
             data=csv_dashboard,
-            file_name="dashboard_licitaciones_filtrado.csv",
+            file_name=(
+                "dashboard_licitaciones_filtrado.csv"
+            ),
             mime="text/csv"
         )
 
