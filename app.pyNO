@@ -18,7 +18,7 @@ st.set_page_config(
 
 
 # ============================================================
-# CARGA DEL MOTOR
+# FUNCIONES DE CARGA
 # ============================================================
 
 @st.cache_resource
@@ -32,10 +32,6 @@ def cargar_motor():
         return cloudpickle.load(f)
 
 
-# ============================================================
-# CARGA DEL DASHBOARD
-# ============================================================
-
 @st.cache_data(show_spinner=False)
 def cargar_dashboard():
 
@@ -44,10 +40,6 @@ def cargar_dashboard():
         encoding="utf-8-sig"
     )
 
-
-# ============================================================
-# PROCESAMIENTO DE EXCEL
-# ============================================================
 
 @st.cache_data(show_spinner=False)
 def procesar_excel(
@@ -85,10 +77,12 @@ except Exception as e:
 
 
 # ============================================================
-# CABECERA
+# CABECERA GENERAL
 # ============================================================
 
-st.title("Grupo GEE")
+st.title(
+    "Grupo GEE"
+)
 
 st.write(
     "Análisis histórico y evaluación de oportunidades "
@@ -97,7 +91,7 @@ st.write(
 
 
 # ============================================================
-# NAVEGACIÓN
+# NAVEGACIÓN PRINCIPAL
 # ============================================================
 
 modo = st.radio(
@@ -112,7 +106,7 @@ modo = st.radio(
 
 # ============================================================
 # ============================================================
-# DASHBOARD
+# DASHBOARD HISTÓRICO
 # ============================================================
 # ============================================================
 
@@ -129,7 +123,7 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # CARGAR DATOS
+    # CARGA DEL DATASET
     # ========================================================
 
     try:
@@ -148,7 +142,7 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # COMPROBAR COLUMNAS
+    # COMPROBACIÓN BÁSICA
     # ========================================================
 
     columnas_requeridas = [
@@ -165,62 +159,93 @@ if modo == "📊 Dashboard histórico":
         "resultado_agrupado"
     ]
 
-    faltantes = [
-        c
-        for c in columnas_requeridas
-        if c not in df_dash.columns
+
+    columnas_faltantes = [
+        col
+        for col in columnas_requeridas
+        if col not in df_dash.columns
     ]
 
-    if faltantes:
+
+    if columnas_faltantes:
 
         st.error(
-            "Faltan columnas en "
-            "`dashboard_servicios_final.csv`."
+            "Faltan columnas necesarias en "
+            "dashboard_servicios_final.csv:"
         )
 
-        st.write(faltantes)
+        st.write(
+            columnas_faltantes
+        )
 
         st.stop()
 
 
     # ========================================================
-    # NORMALIZACIÓN
+    # COPIA Y NORMALIZACIÓN
     # ========================================================
 
     df_dash = df_dash.copy()
 
-    df_dash["anio_publicacion"] = pd.to_numeric(
-        df_dash["anio_publicacion"],
+
+    df_dash[
+        "anio_publicacion"
+    ] = pd.to_numeric(
+        df_dash[
+            "anio_publicacion"
+        ],
         errors="coerce"
     )
 
-    df_dash["mes_publicacion"] = pd.to_numeric(
-        df_dash["mes_publicacion"],
+
+    df_dash[
+        "mes_publicacion"
+    ] = pd.to_numeric(
+        df_dash[
+            "mes_publicacion"
+        ],
         errors="coerce"
     )
 
-    df_dash["presupuesto_expediente"] = pd.to_numeric(
-        df_dash["presupuesto_expediente"],
+
+    df_dash[
+        "presupuesto_expediente"
+    ] = pd.to_numeric(
+        df_dash[
+            "presupuesto_expediente"
+        ],
         errors="coerce"
     )
 
-    df_dash["duracion_meses"] = pd.to_numeric(
-        df_dash["duracion_meses"],
+
+    df_dash[
+        "duracion_meses"
+    ] = pd.to_numeric(
+        df_dash[
+            "duracion_meses"
+        ],
         errors="coerce"
     )
 
-    df_dash["gano_gee"] = (
-        df_dash["gano_gee"]
+
+    df_dash[
+        "gano_gee"
+    ] = (
+        df_dash[
+            "gano_gee"
+        ]
         .fillna(False)
         .astype(bool)
     )
 
 
     # ========================================================
-    # SIDEBAR
+    # SIDEBAR — FILTROS
     # ========================================================
 
-    st.sidebar.header("Filtros")
+    st.sidebar.header(
+        "Filtros"
+    )
 
 
     # --------------------------------------------------------
@@ -236,6 +261,7 @@ if modo == "📊 Dashboard histórico":
         .unique()
         .tolist()
     )
+
 
     anios_seleccionados = st.sidebar.multiselect(
         "Año de publicación",
@@ -257,6 +283,7 @@ if modo == "📊 Dashboard histórico":
         .unique()
         .tolist()
     )
+
 
     ccaas_seleccionadas = st.sidebar.multiselect(
         "Comunidad autónoma",
@@ -280,6 +307,7 @@ if modo == "📊 Dashboard histórico":
         .tolist()
     )
 
+
     competidores_seleccionados = st.sidebar.multiselect(
         "Competidores",
         options=competidores_disponibles,
@@ -300,6 +328,7 @@ if modo == "📊 Dashboard histórico":
         .unique()
         .tolist()
     )
+
 
     organos_seleccionados = st.sidebar.multiselect(
         "Tipo de órgano",
@@ -322,6 +351,7 @@ if modo == "📊 Dashboard histórico":
         .tolist()
     )
 
+
     procedimientos_seleccionados = st.sidebar.multiselect(
         "Procedimiento",
         options=procedimientos_disponibles,
@@ -341,7 +371,8 @@ if modo == "📊 Dashboard histórico":
         df_filtrado = df_filtrado[
             df_filtrado[
                 "anio_publicacion"
-            ].isin(
+            ]
+            .isin(
                 anios_seleccionados
             )
         ]
@@ -352,7 +383,8 @@ if modo == "📊 Dashboard histórico":
         df_filtrado = df_filtrado[
             df_filtrado[
                 "comunidad_autonoma"
-            ].isin(
+            ]
+            .isin(
                 ccaas_seleccionadas
             )
         ]
@@ -377,7 +409,8 @@ if modo == "📊 Dashboard histórico":
         df_filtrado = df_filtrado[
             df_filtrado[
                 "tipo_organo"
-            ].isin(
+            ]
+            .isin(
                 organos_seleccionados
             )
         ]
@@ -388,19 +421,21 @@ if modo == "📊 Dashboard histórico":
         df_filtrado = df_filtrado[
             df_filtrado[
                 "procedimiento_agrupado"
-            ].isin(
+            ]
+            .isin(
                 procedimientos_seleccionados
             )
         ]
 
 
     # ========================================================
-    # CONTROL
+    # CONTROL DE DATOS
     # ========================================================
 
     total_expedientes = len(
         df_filtrado
     )
+
 
     if total_expedientes == 0:
 
@@ -423,6 +458,7 @@ if modo == "📊 Dashboard histórico":
         .sum()
     )
 
+
     presupuesto_mediano = (
         df_filtrado[
             "presupuesto_expediente"
@@ -430,12 +466,14 @@ if modo == "📊 Dashboard histórico":
         .median()
     )
 
+
     expedientes_gee = int(
         df_filtrado[
             "gano_gee"
         ]
         .sum()
     )
+
 
     cuota_gee = (
         expedientes_gee
@@ -446,7 +484,9 @@ if modo == "📊 Dashboard histórico":
     )
 
 
-    st.subheader("Resumen")
+    st.subheader(
+        "Resumen"
+    )
 
 
     col1, col2, col3, col4 = st.columns(4)
@@ -479,8 +519,8 @@ if modo == "📊 Dashboard histórico":
     with col4:
 
         st.metric(
-            "Cuota GEE",
-            f"{cuota_gee:.2f}%"
+            "Expedientes GEE",
+            f"{expedientes_gee:,}"
         )
 
 
@@ -488,7 +528,7 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 1. EVOLUCIÓN ANUAL — ÁREA
+    # EVOLUCIÓN DEL MERCADO
     # ========================================================
 
     st.subheader(
@@ -517,9 +557,6 @@ if modo == "📊 Dashboard histórico":
             )
         )
         .reset_index()
-        .sort_values(
-            "anio_publicacion"
-        )
     )
 
 
@@ -575,28 +612,12 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 2. ESTACIONALIDAD — HEATMAP
+    # ESTACIONALIDAD — HEATMAP
     # ========================================================
 
     st.subheader(
-        "Estacionalidad de las publicaciones"
+        "Estacionalidad"
     )
-
-
-    meses = [
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre"
-    ]
 
 
     df_heatmap = (
@@ -643,6 +664,22 @@ if modo == "📊 Dashboard histórico":
     )
 
 
+    meses = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre"
+    ]
+
+
     df_heatmap[
         "mes"
     ] = (
@@ -667,7 +704,9 @@ if modo == "📊 Dashboard histórico":
             columns="anio_publicacion",
             values="expedientes"
         )
-        .reindex(meses)
+        .reindex(
+            meses
+        )
     )
 
 
@@ -679,7 +718,7 @@ if modo == "📊 Dashboard histórico":
             "y": "Mes",
             "color": "Expedientes"
         },
-        title="Concentración temporal de las licitaciones"
+        title="Concentración de publicaciones por mes y año"
     )
 
 
@@ -701,11 +740,15 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 3. PROCEDIMIENTO + RESULTADO — DONUTS
+    # PROCEDIMIENTO + RESULTADO
     # ========================================================
 
     col1, col2 = st.columns(2)
 
+
+    # --------------------------------------------------------
+    # PROCEDIMIENTO
+    # --------------------------------------------------------
 
     with col1:
 
@@ -736,21 +779,21 @@ if modo == "📊 Dashboard histórico":
             procedimientos,
             names="procedimiento",
             values="expedientes",
-            hole=0.58
+            hole=0.55
         )
 
 
         fig_procedimientos.update_layout(
             height=430,
             margin=dict(
-                l=10,
-                r=10,
+                l=20,
+                r=20,
                 t=20,
-                b=10
+                b=20
             ),
             legend=dict(
                 orientation="h",
-                y=-0.05
+                y=-0.1
             )
         )
 
@@ -760,6 +803,10 @@ if modo == "📊 Dashboard histórico":
             use_container_width=True
         )
 
+
+    # --------------------------------------------------------
+    # RESULTADO
+    # --------------------------------------------------------
 
     with col2:
 
@@ -790,21 +837,21 @@ if modo == "📊 Dashboard histórico":
             resultados,
             names="resultado",
             values="expedientes",
-            hole=0.58
+            hole=0.55
         )
 
 
         fig_resultados.update_layout(
             height=430,
             margin=dict(
-                l=10,
-                r=10,
+                l=20,
+                r=20,
                 t=20,
-                b=10
+                b=20
             ),
             legend=dict(
                 orientation="h",
-                y=-0.05
+                y=-0.1
             )
         )
 
@@ -816,51 +863,46 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 4. DISTRIBUCIÓN ECONÓMICA — ECDF
+    # DISTRIBUCIÓN DE PRESUPUESTOS
     # ========================================================
 
     st.subheader(
-        "Distribución de los presupuestos"
+        "Distribución de presupuestos"
     )
 
 
     df_presupuesto = (
         df_filtrado[
-            [
-                "Número de expediente",
-                "presupuesto_expediente"
-            ]
+            "presupuesto_expediente"
         ]
         .dropna()
-        .copy()
+        .loc[
+            lambda s: s > 0
+        ]
     )
-
-
-    df_presupuesto = df_presupuesto[
-        df_presupuesto[
-            "presupuesto_expediente"
-        ] > 0
-    ]
 
 
     if len(df_presupuesto) > 0:
 
-        fig_ecdf = px.ecdf(
+        fig_presupuesto = px.histogram(
             df_presupuesto,
-            x="presupuesto_expediente",
-            log_x=True,
+            x=df_presupuesto,
+            nbins=35,
             labels={
-                "presupuesto_expediente": "Presupuesto (€)",
-                "y": "Proporción acumulada"
+                "x": "Presupuesto (€)",
+                "count": "Expedientes"
             },
-            title=(
-                "Distribución acumulada de los presupuestos"
-            )
+            title="Distribución de presupuestos"
         )
 
 
-        fig_ecdf.update_layout(
-            height=450,
+        fig_presupuesto.update_xaxes(
+            type="log"
+        )
+
+
+        fig_presupuesto.update_layout(
+            height=430,
             margin=dict(
                 l=20,
                 r=20,
@@ -871,92 +913,56 @@ if modo == "📊 Dashboard histórico":
 
 
         st.plotly_chart(
-            fig_ecdf,
+            fig_presupuesto,
             use_container_width=True
         )
 
 
     # ========================================================
-    # 5. PRESUPUESTO — BOXPLOT POR TRAMO
+    # PRESUPUESTO × DURACIÓN
     # ========================================================
 
     st.subheader(
-        "Dispersión de presupuestos"
+        "Tamaño y duración de las oportunidades"
     )
 
 
-    df_box = df_filtrado[
-        [
-            "tramo_presupuesto",
+    columnas_scatter = [
+        "presupuesto_expediente",
+        "duracion_meses",
+        "ganador_grupo",
+        "gano_gee",
+        "comunidad_autonoma",
+        "Número de expediente"
+    ]
+
+
+    df_scatter = (
+        df_filtrado[
+            columnas_scatter
+        ]
+        .copy()
+    )
+
+
+    df_scatter[
+        "presupuesto_expediente"
+    ] = pd.to_numeric(
+        df_scatter[
             "presupuesto_expediente"
-        ]
-    ].copy()
-
-
-    df_box = df_box.dropna(
-        subset=[
-            "tramo_presupuesto",
-            "presupuesto_expediente"
-        ]
+        ],
+        errors="coerce"
     )
 
 
-    if len(df_box) > 0:
-
-        fig_box = px.box(
-            df_box,
-            x="tramo_presupuesto",
-            y="presupuesto_expediente",
-            points=False,
-            labels={
-                "tramo_presupuesto": "Tramo de presupuesto",
-                "presupuesto_expediente": "Presupuesto (€)"
-            },
-            title="Distribución del presupuesto por tramo"
-        )
-
-
-        fig_box.update_yaxes(
-            type="log"
-        )
-
-
-        fig_box.update_layout(
-            height=480,
-            margin=dict(
-                l=20,
-                r=20,
-                t=60,
-                b=100
-            )
-        )
-
-
-        st.plotly_chart(
-            fig_box,
-            use_container_width=True
-        )
-
-
-    # ========================================================
-    # 6. PRESUPUESTO × DURACIÓN — SCATTER
-    # ========================================================
-
-    st.subheader(
-        "Relación entre presupuesto y duración"
+    df_scatter[
+        "duracion_meses"
+    ] = pd.to_numeric(
+        df_scatter[
+            "duracion_meses"
+        ],
+        errors="coerce"
     )
-
-
-    df_scatter = df_filtrado[
-        [
-            "Número de expediente",
-            "presupuesto_expediente",
-            "duracion_meses",
-            "ganador_grupo",
-            "gano_gee",
-            "comunidad_autonoma"
-        ]
-    ].copy()
 
 
     df_scatter = df_scatter.dropna(
@@ -968,23 +974,15 @@ if modo == "📊 Dashboard histórico":
 
 
     df_scatter = df_scatter[
-        (
-            df_scatter[
-                "presupuesto_expediente"
-            ] > 0
-        )
-        &
-        (
-            df_scatter[
-                "duracion_meses"
-            ] >= 0
-        )
+        df_scatter[
+            "presupuesto_expediente"
+        ] > 0
     ]
 
 
     if len(df_scatter) > 0:
 
-        limite = (
+        limite_presupuesto = (
             df_scatter[
                 "presupuesto_expediente"
             ]
@@ -994,27 +992,27 @@ if modo == "📊 Dashboard histórico":
         )
 
 
-        df_scatter = df_scatter[
+        df_scatter_plot = df_scatter[
             df_scatter[
                 "presupuesto_expediente"
             ]
-            <= limite
+            <= limite_presupuesto
         ].copy()
 
 
-        df_scatter[
+        df_scatter_plot[
             "tipo_ganador"
         ] = np.where(
-            df_scatter[
+            df_scatter_plot[
                 "gano_gee"
             ],
             "Grupo GEE",
-            "Otros"
+            "Otros competidores"
         )
 
 
         fig_scatter = px.scatter(
-            df_scatter,
+            df_scatter_plot,
             x="duracion_meses",
             y="presupuesto_expediente",
             color="tipo_ganador",
@@ -1029,14 +1027,9 @@ if modo == "📊 Dashboard histórico":
                 "tipo_ganador": "Ganador"
             },
             title=(
-                "Presupuesto frente a duración "
+                "Relación entre duración y presupuesto "
                 "(hasta percentil 98)"
             )
-        )
-
-
-        fig_scatter.update_yaxes(
-            type="log"
         )
 
 
@@ -1058,7 +1051,7 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 7. COMPETENCIA — ÚNICA GRÁFICA DE BARRAS
+    # COMPETENCIA
     # ========================================================
 
     st.subheader(
@@ -1084,9 +1077,12 @@ if modo == "📊 Dashboard histórico":
     ]
 
 
-    competencia = competencia.sort_values(
-        "expedientes",
-        ascending=True
+    competencia = (
+        competencia
+        .sort_values(
+            "expedientes",
+            ascending=False
+        )
     )
 
 
@@ -1128,119 +1124,11 @@ if modo == "📊 Dashboard histórico":
 
 
     # ========================================================
-    # 8. EVOLUCIÓN DE COMPETIDORES — LÍNEAS
+    # DISTRIBUCIÓN TERRITORIAL — TREEMAP
     # ========================================================
 
     st.subheader(
-        "Evolución de los principales competidores"
-    )
-
-
-    top_competidores = (
-        df_filtrado[
-            "ganador_grupo"
-        ]
-        .fillna(
-            "Sin información"
-        )
-        .value_counts()
-        .head(6)
-        .index
-        .tolist()
-    )
-
-
-    df_competidores = df_filtrado[
-        df_filtrado[
-            "ganador_grupo"
-        ]
-        .fillna(
-            "Sin información"
-        )
-        .isin(
-            top_competidores
-        )
-    ].copy()
-
-
-    evolucion_competidores = (
-        df_competidores
-        .dropna(
-            subset=[
-                "anio_publicacion"
-            ]
-        )
-        .groupby(
-            [
-                "anio_publicacion",
-                "ganador_grupo"
-            ]
-        )
-        .agg(
-            expedientes=(
-                "Número de expediente",
-                "nunique"
-            )
-        )
-        .reset_index()
-    )
-
-
-    if len(
-        evolucion_competidores
-    ) > 0:
-
-        evolucion_competidores[
-            "anio_publicacion"
-        ] = (
-            evolucion_competidores[
-                "anio_publicacion"
-            ]
-            .astype(int)
-        )
-
-
-        fig_evolucion_comp = px.line(
-            evolucion_competidores,
-            x="anio_publicacion",
-            y="expedientes",
-            color="ganador_grupo",
-            markers=True,
-            labels={
-                "anio_publicacion": "Año",
-                "expedientes": "Expedientes",
-                "ganador_grupo": "Competidor"
-            },
-            title=(
-                "Evolución anual de los principales competidores"
-            )
-        )
-
-
-        fig_evolucion_comp.update_layout(
-            height=500,
-            hovermode="x unified",
-            margin=dict(
-                l=20,
-                r=20,
-                t=60,
-                b=20
-            )
-        )
-
-
-        st.plotly_chart(
-            fig_evolucion_comp,
-            use_container_width=True
-        )
-
-
-    # ========================================================
-    # 9. MERCADO POR CCAA — TREEMAP
-    # ========================================================
-
-    st.subheader(
-        "Distribución territorial del mercado"
+        "Distribución territorial"
     )
 
 
@@ -1263,49 +1151,47 @@ if modo == "📊 Dashboard histórico":
     )
 
 
-    if len(territorio) > 0:
-
-        fig_territorio = px.treemap(
-            territorio,
-            path=[
-                "comunidad_autonoma"
-            ],
-            values="expedientes",
-            color="presupuesto_mediano",
-            hover_data={
-                "expedientes": True,
-                "presupuesto_mediano": ":,.0f"
-            },
-            labels={
-                "expedientes": "Expedientes",
-                "presupuesto_mediano":
-                    "Presupuesto mediano"
-            },
-            title=(
-                "Peso relativo de cada comunidad autónoma"
-            )
+    fig_territorio = px.treemap(
+        territorio,
+        path=[
+            "comunidad_autonoma"
+        ],
+        values="expedientes",
+        color="presupuesto_mediano",
+        hover_data={
+            "expedientes": True,
+            "presupuesto_mediano": ":,.0f"
+        },
+        labels={
+            "expedientes": "Expedientes",
+            "presupuesto_mediano": "Presupuesto mediano"
+        },
+        title=(
+            "Peso de cada comunidad autónoma "
+            "en el mercado analizado"
         )
+    )
 
 
-        fig_territorio.update_layout(
-            height=500,
-            margin=dict(
-                l=10,
-                r=10,
-                t=60,
-                b=10
-            )
+    fig_territorio.update_layout(
+        height=500,
+        margin=dict(
+            l=20,
+            r=20,
+            t=60,
+            b=20
         )
+    )
 
 
-        st.plotly_chart(
-            fig_territorio,
-            use_container_width=True
-        )
+    st.plotly_chart(
+        fig_territorio,
+        use_container_width=True
+    )
 
 
     # ========================================================
-    # 10. POSICIÓN DE GEE POR CCAA — BUBBLE
+    # POSICIÓN DE GEE POR CCAA
     # ========================================================
 
     st.subheader(
@@ -1356,13 +1242,14 @@ if modo == "📊 Dashboard histórico":
     gee_ccaa = gee_ccaa[
         gee_ccaa[
             "expedientes"
-        ] >= 10
+        ]
+        >= 10
     ].copy()
 
 
     if len(gee_ccaa) > 0:
 
-        media_gee = (
+        media_cuota = (
             gee_ccaa[
                 "cuota_gee"
             ].mean()
@@ -1376,19 +1263,17 @@ if modo == "📊 Dashboard histórico":
             size="expedientes",
             hover_name="comunidad_autonoma",
             labels={
-                "expedientes":
-                    "Tamaño del mercado",
-                "cuota_gee":
-                    "Cuota GEE (%)"
+                "expedientes": "Tamaño del mercado",
+                "cuota_gee": "Cuota GEE (%)"
             },
             title=(
-                "Cuota de GEE frente al tamaño del mercado"
+                "Cuota GEE frente al tamaño del mercado"
             )
         )
 
 
         fig_gee_ccaa.add_hline(
-            y=media_gee,
+            y=media_cuota,
             line_dash="dash",
             annotation_text="Media"
         )
@@ -1464,7 +1349,7 @@ else:
 
 
     # ========================================================
-    # CARGAR EXCEL
+    # CARGA DEL EXCEL
     # ========================================================
 
     st.header(
@@ -1482,7 +1367,7 @@ else:
 
 
     # ========================================================
-    # PROCESAR
+    # PROCESAMIENTO
     # ========================================================
 
     if archivo is not None:
@@ -1516,7 +1401,7 @@ else:
 
 
         # ====================================================
-        # RESULTADO AUTOMÁTICO
+        # RESUMEN AUTOMÁTICO
         # ====================================================
 
         st.header(
@@ -1655,7 +1540,7 @@ else:
         else:
 
             # =================================================
-            # SELECCIÓN
+            # SELECCIÓN DE OPORTUNIDAD
             # =================================================
 
             st.subheader(
@@ -1742,7 +1627,7 @@ else:
 
 
             # =================================================
-            # RECUPERAR FILA
+            # RECUPERAR OPORTUNIDAD
             # =================================================
 
             fila_seleccionada = df_resultado[
@@ -1873,7 +1758,7 @@ else:
 
 
             # =================================================
-            # RESULTADO
+            # RESULTADO MANUAL
             # =================================================
 
             if calcular:
@@ -1921,6 +1806,10 @@ else:
                     "Resultado de la evaluación manual"
                 )
 
+
+                # =============================================
+                # SCORES
+                # =============================================
 
                 col1, col2, col3 = st.columns(3)
 
@@ -2036,7 +1925,7 @@ else:
 
 
                 # =============================================
-                # MENSAJE
+                # MENSAJE FINAL
                 # =============================================
 
                 if (
