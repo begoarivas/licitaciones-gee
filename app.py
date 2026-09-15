@@ -5,9 +5,7 @@ import streamlit as st
 import plotly.express as px
 
 
-# ============================================================
 # CONFIGURACIÓN
-# ============================================================
 
 st.set_page_config(
     page_title="Grupo GEE - Licitaciones",
@@ -35,9 +33,7 @@ st.markdown(
 )
 
 
-# ============================================================
 # CARGA DEL MOTOR
-# ============================================================
 
 @st.cache_resource
 def cargar_motor():
@@ -53,9 +49,7 @@ except Exception as e:
     st.stop()
 
 
-# ============================================================
 # CARGA DEL DASHBOARD
-# ============================================================
 
 @st.cache_data(show_spinner=False)
 def cargar_dashboard():
@@ -94,9 +88,7 @@ def procesar_excel(contenido_archivo):
     return motor.predict(df_entrada)
 
 
-# ============================================================
 # CABECERA Y NAVEGACIÓN
-# ============================================================
 
 st.title("Grupo GEE")
 st.write("Análisis histórico y evaluación de oportunidades de licitación.")
@@ -108,9 +100,7 @@ modo = st.radio(
 )
 
 
-# ============================================================
 # DASHBOARD
-# ============================================================
 
 if modo == "📊 Dashboard histórico":
 
@@ -151,9 +141,7 @@ if modo == "📊 Dashboard histórico":
 
     df_dash["gano_gee"] = df_dash["gano_gee"].fillna(False).astype(bool)
 
-    # --------------------------------------------------------
     # FILTROS
-    # --------------------------------------------------------
 
     st.sidebar.header("Filtros")
 
@@ -207,9 +195,7 @@ if modo == "📊 Dashboard histórico":
         default=procedimientos,
     )
 
-    # --------------------------------------------------------
     # APLICAR FILTROS
-    # --------------------------------------------------------
 
     df_filtrado = df_dash.copy()
 
@@ -245,9 +231,7 @@ if modo == "📊 Dashboard histórico":
         st.warning("No hay expedientes que cumplan los filtros seleccionados.")
         st.stop()
 
-    # --------------------------------------------------------
     # KPIs
-    # --------------------------------------------------------
 
     total = len(df_filtrado)
     presupuesto_total = df_filtrado["presupuesto_expediente"].sum()
@@ -266,14 +250,10 @@ if modo == "📊 Dashboard histórico":
 
     st.divider()
 
-    # --------------------------------------------------------
     # PALETA VISUAL: cambia el ESTILO, no el contenido.
-    # --------------------------------------------------------
     palette = px.colors.qualitative.Safe
 
-    # ========================================================
     # 1. EVOLUCIÓN ANUAL — MISMO DATO, ESTILO MEJORADO
-    # ========================================================
 
     st.subheader("Evolución del mercado")
 
@@ -306,9 +286,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 2. ESTACIONALIDAD — MISMO DATO, BARRAS VERTICALES ESTILIZADAS
-    # ========================================================
 
     st.subheader("Estacionalidad")
 
@@ -350,9 +328,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 3. PROCEDIMIENTO + RESULTADO — MISMO CONTENIDO, DONUTS
-    # ========================================================
 
     c1, c2 = st.columns(2)
 
@@ -406,9 +382,7 @@ if modo == "📊 Dashboard histórico":
         fig.update_layout(height=430, margin=dict(l=20, r=20, t=60, b=20))
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 4. CCAA — MISMO CONTENIDO, BARRA HORIZONTAL CON PALETA
-    # ========================================================
 
     st.subheader("Distribución territorial")
 
@@ -444,9 +418,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 5. COMPETENCIA — MISMO CONTENIDO, BARRA HORIZONTAL ESTILIZADA
-    # ========================================================
 
     st.subheader("Competencia")
 
@@ -479,9 +451,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 6. GEE POR AÑO — MISMO CONTENIDO, LÍNEA
-    # ========================================================
 
     st.subheader("Posición de Grupo GEE")
 
@@ -523,9 +493,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 7. CUOTA GEE POR PROCEDIMIENTO — MISMO CONTENIDO
-    # ========================================================
 
     c1, c2 = st.columns(2)
 
@@ -609,9 +577,7 @@ if modo == "📊 Dashboard histórico":
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # 8. TIPO DE ÓRGANO — MISMO CONTENIDO
-    # ========================================================
 
     st.subheader("Tipo de órgano de contratación")
 
@@ -647,9 +613,7 @@ if modo == "📊 Dashboard histórico":
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ========================================================
     # DATOS / DESCARGA
-    # ========================================================
 
     with st.expander("Consultar datos del dashboard"):
         st.dataframe(
@@ -672,9 +636,7 @@ if modo == "📊 Dashboard histórico":
         )
 
 
-# ============================================================
 # MOTOR DE LICITACIONES
-# ============================================================
 
 else:
 
@@ -706,9 +668,7 @@ else:
             st.exception(e)
             st.stop()
 
-        # ----------------------------------------------------
         # RESUMEN AUTOMÁTICO
-        # ----------------------------------------------------
 
         st.header("2. Resultado automático")
 
@@ -738,9 +698,7 @@ else:
                 int((df_resultado["prioridad"] == "Alta").sum())
             )
 
-        # ----------------------------------------------------
         # RANKING
-        # ----------------------------------------------------
 
         st.header("3. Ranking de oportunidades")
 
@@ -795,9 +753,7 @@ else:
             hide_index=True,
         )
 
-        # ----------------------------------------------------
         # DESCARGA DEL RANKING
-        # ----------------------------------------------------
 
         csv_ranking = ranking.to_csv(
             index=False,
@@ -812,9 +768,7 @@ else:
             key="motor_download_csv",
         )
 
-        # ----------------------------------------------------
         # EVALUACIÓN MANUAL
-        # ----------------------------------------------------
 
         st.header("4. Evaluación manual opcional")
 
